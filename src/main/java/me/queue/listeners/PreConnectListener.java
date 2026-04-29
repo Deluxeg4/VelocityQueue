@@ -9,12 +9,17 @@ import me.queue.Main;
 import me.queue.PlayerQueue;
 import me.queue.Reloadable;
 
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static me.queue.util.MessageUtil.sendMessage;
 
 public class PreConnectListener implements Reloadable {
     private final Main plugin;
     private final PlayerQueue normalQueue;
     private final PlayerQueue prioQueue;
+    private final Set<UUID> serverNotFullNotified;
     private String serverFullMessage;
     private String serverNotFullMessage;
 
@@ -22,6 +27,7 @@ public class PreConnectListener implements Reloadable {
         this.plugin = plugin;
         normalQueue = plugin.getNormalQueue();
         prioQueue = plugin.getPrioQueue();
+        serverNotFullNotified = ConcurrentHashMap.newKeySet();
         reloadConfig();
     }
 
@@ -40,7 +46,7 @@ public class PreConnectListener implements Reloadable {
                 addToQueue(player);
                 event.setResult(ServerPreConnectEvent.ServerResult.allowed(queueServer));
             } else {
-                sendMessage(player, serverNotFullMessage);
+                sendServerNotFullMessage(player);
             }
         }
     }
@@ -71,6 +77,12 @@ public class PreConnectListener implements Reloadable {
     private void removeFromQueue(Player player) {
         if (prioQueue.isInQueue(player)) prioQueue.removeFromQueue(player);
         if (normalQueue.isInQueue(player)) normalQueue.removeFromQueue(player);
+    }
+
+    private void sendServerNotFullMessage(Player player) {
+        if (serverNotFullNotified.add(player.getUniqueId())) {
+            sendMessage(player, serverNotFullMessage);
+        }
     }
 
     @Override

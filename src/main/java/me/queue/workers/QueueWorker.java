@@ -8,6 +8,7 @@ import me.queue.util.Utils;
 import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -25,12 +26,14 @@ public class QueueWorker implements Runnable, Reloadable {
     private Component prioFooter;
     private Component normalFooter;
     private final Set<UUID> connectingPlayers;
+    private final Map<UUID, Long> retryAfter;
 
     public QueueWorker(Main plugin) {
         this.plugin = plugin;
         prioQueue = plugin.getPrioQueue();
         normalQueue = plugin.getNormalQueue();
         connectingPlayers = ConcurrentHashMap.newKeySet();
+        retryAfter = new ConcurrentHashMap<>();
         reloadConfig();
     }
 
@@ -75,21 +78,53 @@ public class QueueWorker implements Runnable, Reloadable {
 
     private void connectQueuedPlayer(Player player, PlayerQueue queue) {
         if (plugin.getMainServer() == null) return;
+        if (isConnectedToMain(player)) {
+            queue.removeFromQueue(player);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (retryAfter.getOrDefault(player.getUniqueId(), 0L) > now) return;
         if (!connectingPlayers.add(player.getUniqueId())) return;
         sendMessage(player, queueEndMessage);
         player.createConnectionRequest(plugin.getMainServer()).connect().whenComplete((result, throwable) -> {
             connectingPlayers.remove(player.getUniqueId());
             if (throwable != null) {
+                retryAfter.put(player.getUniqueId(), System.currentTimeMillis() + 30000L);
                 plugin.getLogger().atWarn().setCause(throwable).log("Failed to connect {} from queue", player.getUsername());
                 return;
             }
             if (!result.isSuccessful()) {
-                String reason = result.getReasonComponent().map(Component::toString).orElse("unknown reason");
-                plugin.getLogger().warn("Failed to connect {} from queue: {}", player.getUsername(), reason);
+                if (isConnectedToMain(player)) {
+                    queue.removeFromQueue(player);
+                    retryAfter.remove(player.getUniqueId());
+                    return;
+                }
+                switch (result.getStatus()) {
+                    case CONNECTION_CANCELLED, CONNECTION_IN_PROGRESS ->
+                            retryAfter.put(player.getUniqueId(), System.currentTimeMillis() + 3000L);
+                    case SERVER_DISCONNECTED -> {
+                        retryAfter.put(player.getUniqueId(), System.currentTimeMillis() + 30000L);
+                        String reason = result.getReasonComponent().map(Component::toString).orElse("no reason component");
+                        plugin.getLogger().warn("Failed to connect {} from queue: status={}, reason={}", player.getUsername(), result.getStatus(), reason);
+                    }
+                    case ALREADY_CONNECTED -> {
+                        queue.removeFromQueue(player);
+                        retryAfter.remove(player.getUniqueId());
+                    }
+                    default ->
+                            retryAfter.put(player.getUniqueId(), System.currentTimeMillis() + 10000L);
+                }
                 return;
             }
             queue.removeFromQueue(player);
+            retryAfter.remove(player.getUniqueId());
         });
+    }
+
+    private boolean isConnectedToMain(Player player) {
+        return plugin.getMainServer() != null && player.getCurrentServer()
+                .map(connection -> connection.getServer().getServerInfo().getName().equals(plugin.getMainServer().getServerInfo().getName()))
+                .orElse(false);
     }
 
     private Component parseHeader(int posInQueue, boolean serverHasSlot) {
@@ -99,7 +134,7 @@ public class QueueWorker implements Runnable, Reloadable {
                 : plugin.getConfig().node("messages", "server-full").getString("");
         for (String line : tabHeader) {
             String raw = line.replace("%position%", String.valueOf(posInQueue));
-            raw = raw.replace("%wait%", Utils.getFormattedInterval(posInQueue * 60000L));
+            raw = raw.replace("%wait%", Utils.getFormattedInterval(((posInQueue*5L - plugin.getMaxSlots()) * 60L) * 1000));
             raw = raw.replace("%online%", String.valueOf(plugin.getServer().getPlayerCount()));
             raw = raw.replace("%status%", status);
             processed.add(raw);

@@ -105,6 +105,10 @@ public class QueueCommand implements SimpleCommand {
         queue.addToQueue(player);
         sendMessage(player, configMessage("messages", "queue-joined", "&aYou joined the queue. Position: &l%d"), queue.getQueuePosition(player));
 
+            if (isConnectedTo(player, queueServer)) {
+            return;
+        }
+
         player.createConnectionRequest(queueServer).connect().whenComplete((result, throwable) -> {
             if (throwable != null) {
                 queue.removeFromQueue(player);
@@ -171,6 +175,12 @@ public class QueueCommand implements SimpleCommand {
         return removed;
     }
 
+    private boolean isConnectedTo(Player player, RegisteredServer server) {
+        return player.getCurrentServer()
+                .map(connection -> connection.getServer().getServerInfo().getName().equals(server.getServerInfo().getName()))
+                .orElse(false);
+    }
+
     private boolean hasAdminPermission(CommandSource source) {
         return source.hasPermission("queue.admin");
     }
@@ -183,6 +193,6 @@ public class QueueCommand implements SimpleCommand {
     }
 
     private String versionString() {
-        return String.format("&b[&r&aQUEUE&b]&r&6 Version&r&a %s&r&6 by&r&a 254n_m", plugin.getClass().getAnnotation(Plugin.class).version());
+        return String.format("&b[&r&aQUEUE&b]&r&6 Version&r&a %s&r&6 by&r&a zeb.co", plugin.getClass().getAnnotation(Plugin.class).version());
     }
 }
