@@ -1,0 +1,51 @@
+queue-server: "login"
+main-server: "main"
+main-server-slots: 200
+messages:
+  interval: 10
+  server-full: "&62b2t-th is full"
+  server-not-full: "&62b2t-th is not full"
+  queue-position: "&6Position in queue: &l%d"
+  queue-status: "&6Position in queue: &l%d"
+  queue-joined: "&aYou joined the queue. Position: &l%d"
+  queue-left: "&aYou left the queue."
+  queue-already-in: "&cYou are already in the queue."
+  queue-not-in: "&cYou are not in the queue."
+  queue-end: "&6Connecting to &62b2t-th..."
+#this shows the queue size when you hover over the ping on the server list
+custom-query:
+  enable: true
+  query:
+    - "&6In-game: %online%"
+    - "&6Queue: %totalinqueue%"
+    - "&6Priority Queue: %priority%"
+    - "&f... and %online% more ..."
+  max-players: -1
+tablist:
+  header:
+    - ""
+    - "&7&l&o2BUILDERS2TOOLS"
+    - "&7&oThailand"
+    - ""
+    - "%status%"
+    - "&6Position in queue: &l%position%"
+    - "&6Estimated time: &l%wait%"
+    - ""
+  priority-queue-footer:
+    - ""
+    - "&6You have priority queue status please wait for an available slot on the server"
+    - ""
+    - "&7Contact: contact@2b2t.th"
+    - "&7Discussion: http://dsc.gg/2b2t-th"
+    - "&7Website: https://2b2t-th.org"
+    - "&7These are the only official 6b6t websites and contacts"
+    - ""
+  normal-queue-footer:
+    - ""
+    - "&6You can now donate to receive priority queue status, please visit shop.2b2t-th"
+    - ""
+    - "&7Contact: contact@2b2t.th"
+    - "&7Discussion: http://dsc.gg/2b2t-th"
+    - "&7Website: https://2b2t-th.org"
+    - "&7These are the only official 2b2t-th websites and contacts"
+    - ""
