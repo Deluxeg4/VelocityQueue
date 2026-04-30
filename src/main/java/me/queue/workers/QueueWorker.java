@@ -134,7 +134,7 @@ public class QueueWorker implements Runnable, Reloadable {
                 : plugin.getConfig().node("messages", "server-full").getString("");
         for (String line : tabHeader) {
             String raw = line.replace("%position%", String.valueOf(posInQueue));
-            raw = raw.replace("%wait%", Utils.getFormattedInterval(((posInQueue*5L - plugin.getMaxSlots()) * 60L) * 1000));
+            raw = raw.replace("%wait%", Utils.getFormattedInterval(posInQueue * 60000L));
             raw = raw.replace("%online%", String.valueOf(plugin.getServer().getPlayerCount()));
             raw = raw.replace("%status%", status);
             processed.add(raw);

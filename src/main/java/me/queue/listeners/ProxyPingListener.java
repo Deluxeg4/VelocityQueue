@@ -20,6 +20,7 @@ public class ProxyPingListener implements Reloadable {
     private List<String> playerList;
     private int confMaxPlayers;
     private boolean enabled;
+    private String versionName;
     private final Map<String, Supplier<Integer>> mappings;
 
     public ProxyPingListener(Main plugin) {
@@ -40,9 +41,16 @@ public class ProxyPingListener implements Reloadable {
         ServerPing og = event.getPing();
         int playerCount = plugin.getServer().getPlayerCount();
         int maxPlayers = (confMaxPlayers == -1) ? playerCount + 1 : confMaxPlayers;
+        List<ServerPing.SamplePlayer> sampleList = genSampleList();
+        int visiblePlayerCount = Math.min(playerCount, sampleList.size());
+
+        String versionText = (versionName == null || versionName.isEmpty())
+                ? og.getVersion().getName()
+                : replacePlaceholders(versionName);
+
         ServerPing newPing = new ServerPing(
-                og.getVersion(),
-                new ServerPing.Players(playerCount, maxPlayers, genSampleList()),
+                new ServerPing.Version(og.getVersion().getProtocol(), legacyTranslate(versionText)),
+                new ServerPing.Players(visiblePlayerCount, maxPlayers, sampleList),
                 og.getDescriptionComponent(),
                 og.getFavicon().orElse(null),
                 og.getModinfo().orElse(null));
@@ -53,6 +61,7 @@ public class ProxyPingListener implements Reloadable {
     @Override
     public void reloadConfig() {
         try {
+            versionName = plugin.getConfig().node("custom-query", "protocol-message").getString();
             playerList = plugin.getConfig().node("custom-query", "query").getList(String.class);
             if (playerList == null) playerList = List.of();
             confMaxPlayers = plugin.getConfig().node("custom-query", "max-players").getInt(-1);

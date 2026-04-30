@@ -15,11 +15,11 @@ messages:
 #this shows the queue size when you hover over the ping on the server list
 custom-query:
   enable: true
+  protocol-message: "1.21.11"
   query:
     - "&6In-game: %online%"
     - "&6Queue: %totalinqueue%"
     - "&6Priority Queue: %priority%"
-    - "&f... and %online% more ..."
   max-players: -1
 tablist:
   header:
